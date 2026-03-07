@@ -13,7 +13,7 @@ export default defineBackground(() => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, language: 'English' }),
         signal: controller.signal,
       });
 
@@ -32,12 +32,23 @@ export default defineBackground(() => {
     }
   }
 
-  browser.runtime.onMessage.addListener((message: unknown) => {
+  browser.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
     if (!message || typeof message !== 'object') return;
 
     const payload = message as { type?: string; url?: string };
     if (payload.type !== 'verify-url' || !payload.url) return;
 
-    return verifyDomain(payload.url);
+    void verifyDomain(payload.url)
+      .then((result) => {
+        sendResponse(result);
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'unknown error';
+        sendResponse({
+          __error: message,
+        });
+      });
+
+    return true;
   });
 });

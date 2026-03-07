@@ -4,6 +4,11 @@ type VerifyResponse = {
   Fail: boolean;
 };
 
+type VerifyState =
+  | { status: 'pending' }
+  | { status: 'done'; result: VerifyResponse }
+  | { status: 'error'; message: string };
+
 export default defineContentScript({
   matches: ['http://*/*', 'https://*/*'],
   main() {
@@ -20,7 +25,8 @@ export default defineContentScript({
       'Potentially Misleading:true': browser.runtime.getURL('/verification_icon/Misleading-SG.svg'),
       'Potentially Misleading:false': browser.runtime.getURL('/verification_icon/Misleading-NonSG.svg'),
     } as const;
-    const verifyCache = new Map<string, Promise<VerifyResponse>>();
+    const verifyStateByUrl = new Map<string, VerifyState>();
+    let injectTimeout: number | null = null;
 
     const resetBadgeToDefaultLayout = (
       badge: HTMLElement,
@@ -55,17 +61,22 @@ export default defineContentScript({
       badgeIcon.style.objectFit = 'contain';
     };
 
-    const verifyUrl = (url: string) => {
-      const cached = verifyCache.get(url);
-      if (cached) return cached;
-
-      const request = browser.runtime.sendMessage({
+    const verifyUrl = async (url: string) => {
+      const response = await (browser.runtime.sendMessage({
         type: 'verify-url',
         url,
-      }) as Promise<VerifyResponse>;
+      }) as Promise<VerifyResponse | { __error?: string }>);
 
-      verifyCache.set(url, request);
-      return request;
+      if (
+        response &&
+        typeof response === 'object' &&
+        '__error' in response &&
+        typeof response.__error === 'string'
+      ) {
+        throw new Error(response.__error);
+      }
+
+      return response as VerifyResponse;
     };
 
     const createBadge = () => {
@@ -104,7 +115,82 @@ export default defineContentScript({
       return badge;
     };
 
-    const injectDomainBadge = () => {
+    const applyPendingBadge = (
+      badge: HTMLElement,
+      badgeIcon: HTMLImageElement,
+      verifyLine: HTMLSpanElement,
+    ) => {
+      resetBadgeToDefaultLayout(badge, badgeIcon, verifyLine);
+      badgeIcon.src = iconUrl;
+      verifyLine.textContent = 'verifying...';
+      verifyLine.style.color = '#6b7280';
+    };
+
+    const applySuccessBadge = (
+      badge: HTMLElement,
+      badgeIcon: HTMLImageElement,
+      verifyLine: HTMLSpanElement,
+      result: VerifyResponse,
+    ) => {
+      const verificationImageUrl =
+        verificationImageUrls[
+          `${result.Verdict}:${String(result.IsSingaporeSite)}` as keyof typeof verificationImageUrls
+        ];
+
+      if (verificationImageUrl) {
+        showImageBadge(badge, badgeIcon, verificationImageUrl);
+        verifyLine.textContent = '';
+        verifyLine.style.display = 'none';
+        return;
+      }
+
+      resetBadgeToDefaultLayout(badge, badgeIcon, verifyLine);
+      badgeIcon.src = iconUrl;
+      verifyLine.textContent = `Verdict=${result.Verdict} | SG=${String(result.IsSingaporeSite)} | Fail=${String(result.Fail)}`;
+    };
+
+    const applyErrorBadge = (
+      badge: HTMLElement,
+      badgeIcon: HTMLImageElement,
+      verifyLine: HTMLSpanElement,
+      message: string,
+    ) => {
+      resetBadgeToDefaultLayout(badge, badgeIcon, verifyLine);
+      badgeIcon.src = iconUrl;
+      verifyLine.textContent = `verify failed: ${message}`;
+      verifyLine.style.color = '#b91c1c';
+    };
+
+    const scheduleInject = () => {
+      if (injectTimeout !== null) {
+        window.clearTimeout(injectTimeout);
+      }
+
+      injectTimeout = window.setTimeout(() => {
+        injectTimeout = null;
+        injectDomainBadge();
+      }, 150);
+    };
+
+    const requestVerification = (url: string) => {
+      const currentState = verifyStateByUrl.get(url);
+      if (currentState?.status === 'pending' || currentState?.status === 'done') return;
+
+      verifyStateByUrl.set(url, { status: 'pending' });
+
+      void verifyUrl(url)
+        .then((result) => {
+          verifyStateByUrl.set(url, { status: 'done', result });
+          scheduleInject();
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'unknown error';
+          verifyStateByUrl.set(url, { status: 'error', message });
+          scheduleInject();
+        });
+    };
+
+    function injectDomainBadge() {
       const processedCards = new Set<HTMLElement>();
       const cites = document.querySelectorAll<HTMLElement>('#search cite');
 
@@ -143,59 +229,34 @@ export default defineContentScript({
           heading.appendChild(badge);
         }
 
+        badge.setAttribute('data-url', fullUrl);
 
-        const currentUrl = badge.getAttribute('data-url');
-        const currentState = badge.getAttribute('data-verify-state');
-        if (currentUrl === fullUrl && (currentState === 'pending' || currentState === 'done')) {
+        const verifyState = verifyStateByUrl.get(fullUrl);
+
+        if (!verifyState) {
+          applyPendingBadge(badge, badgeIcon, verifyLine);
+          requestVerification(fullUrl);
           continue;
         }
 
-        badge.setAttribute('data-url', fullUrl);
-        badge.setAttribute('data-verify-state', 'pending');
-        resetBadgeToDefaultLayout(badge, badgeIcon, verifyLine);
-        badgeIcon.src = iconUrl;
-        verifyLine.textContent = 'verifying...';
-        verifyLine.style.color = '#6b7280';
+        if (verifyState.status === 'pending') {
+          applyPendingBadge(badge, badgeIcon, verifyLine);
+          continue;
+        }
 
-        void verifyUrl(fullUrl)
-          .then((result) => {
-            // Skip stale response if this badge has moved to another URL.
-            if (badge?.getAttribute('data-url') !== fullUrl) return;
+        if (verifyState.status === 'done') {
+          applySuccessBadge(badge, badgeIcon, verifyLine, verifyState.result);
+          continue;
+        }
 
-            badge.setAttribute('data-verify-state', 'done');
-            const verificationImageUrl =
-              verificationImageUrls[
-                `${result.Verdict}:${String(result.IsSingaporeSite)}` as keyof typeof verificationImageUrls
-              ];
-
-            if (verificationImageUrl) {
-              showImageBadge(badge, badgeIcon, verificationImageUrl);
-              verifyLine.textContent = '';
-              verifyLine.style.display = 'none';
-              return;
-            }
-
-            resetBadgeToDefaultLayout(badge, badgeIcon, verifyLine);
-            badgeIcon.src = iconUrl;
-            verifyLine.textContent = `Verdict=${result.Verdict} | SG=${String(result.IsSingaporeSite)} | Fail=${String(result.Fail)}`;
-          })
-          .catch((error: unknown) => {
-            if (badge?.getAttribute('data-url') !== fullUrl) return;
-
-            badge.setAttribute('data-verify-state', 'error');
-            const message = error instanceof Error ? error.message : 'unknown error';
-            resetBadgeToDefaultLayout(badge, badgeIcon, verifyLine);
-            badgeIcon.src = iconUrl;
-            verifyLine.textContent = `verify failed: ${message}`;
-            verifyLine.style.color = '#b91c1c';
-          });
+        applyErrorBadge(badge, badgeIcon, verifyLine, verifyState.message);
       }
-    };
+    }
 
     injectDomainBadge();
 
     const observer = new MutationObserver(() => {
-      injectDomainBadge();
+      scheduleInject();
     });
 
     observer.observe(document.body, {

@@ -9,5 +9,11 @@ export default defineConfig({
     host_permissions: [
       'https://natfanclub-backend-809989871890.asia-southeast1.run.app/*',
     ],
+    web_accessible_resources: [
+      {
+        resources: ['icon/*', 'verification_icon/*'],
+        matches: ['http://*/*', 'https://*/*'],
+      },
+    ],
   },
 });
