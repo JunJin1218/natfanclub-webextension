@@ -3,6 +3,7 @@
   import { getStoredAuth, clearStoredAuth } from '../../lib/auth-storage';
   import type { StoredAuth } from '../../lib/auth-storage';
   import { isChatDomain, getChatPlatformFromHostname } from '../../lib/chat-scrapers/types';
+  import { HACKOMANIA_API_BASE } from '../../lib/config';
   import Login from './Login.svelte';
   import ChatVerifyPanel from './ChatVerifyPanel.svelte';
 
@@ -575,7 +576,17 @@
 <main class={`popup-shell ${getIsChatTab() ? 'app-tone-neutral' : `app-tone-${getVerificationTone(verdict)}`}`}>
   <div class="popup-main-inner">
     <header class="popup-header">
-      <span class="user-email">{auth.user.email}</span>
+      <div class="popup-header-left">
+        <span class="user-email">{auth.user.email}</span>
+        <a
+          class="popup-website-link"
+          href={HACKOMANIA_API_BASE}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Go to FactGuard website
+        </a>
+      </div>
       <button
         type="button"
         class="logout-button"
@@ -922,6 +933,22 @@
     gap: 10px;
     margin-bottom: 14px;
     flex-wrap: wrap;
+  }
+
+  .popup-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .popup-website-link {
+    font-size: 11px;
+    color: #4f46e5;
+    text-decoration: none;
+  }
+
+  .popup-website-link:hover {
+    text-decoration: underline;
   }
 
   .popup-tabs {

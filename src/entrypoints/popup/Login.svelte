@@ -2,9 +2,11 @@
   import { loginWithEmailAndPassword } from '../../lib/hackomania-api';
   import { setStoredAuth } from '../../lib/auth-storage';
   import type { StoredAuthUser } from '../../lib/auth-storage';
+  import { HACKOMANIA_API_BASE } from '../../lib/config';
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const MIN_PASSWORD_LENGTH = 1;
+  const REGISTER_URL = `${HACKOMANIA_API_BASE}/auth/register`;
 
   export let onLoginSuccess: (user: StoredAuthUser) => void = () => {};
 
@@ -54,7 +56,7 @@
 
 <main class="login-shell">
   <section class="login-card">
-    <h1 class="login-title">Log in to Hackomania</h1>
+    <h1 class="login-title">Log in to FactGuard</h1>
     <p class="login-subtitle">Sign in with your account to use the extension.</p>
 
     <form class="login-form" onsubmit={handleSubmit}>
@@ -95,6 +97,10 @@
         {isSubmitting ? 'Signing in…' : 'Sign in'}
       </button>
     </form>
+
+    <p class="login-register">
+      New user? <a class="login-register-link" href={REGISTER_URL} target="_blank" rel="noopener noreferrer">Register an account</a>
+    </p>
   </section>
 </main>
 
@@ -191,5 +197,22 @@
   .login-submit:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .login-register {
+    margin: 20px 0 0;
+    font-size: 14px;
+    color: #61584b;
+    text-align: center;
+  }
+
+  .login-register-link {
+    color: #3c5ae1;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .login-register-link:hover {
+    text-decoration: underline;
   }
 </style>
