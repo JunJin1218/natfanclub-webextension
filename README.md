@@ -8,9 +8,9 @@ AI-assisted credibility review system built across three repositories:
 
 ## Repositories
 We have THREE repositories! Pls take a look.
-- WebExtension: [JunJin1218/natfanclub-webextension](https://github.com/JunJin1218/natfanclub-webextension)
-- Backend for WebExtension: [JunJin1218/natfanclub-backend](https://github.com/JunJin1218/natfanclub-backend.git)
-- Website repo: [ItsMeOX/Hackomania](https://github.com/ItsMeOX/Hackomania)
+- WebExtension: [JunJin1218/FactGuard-WebExtension](https://github.com/JunJin1218/FactGuard-WebExtension)
+- Simple backend for WebExtension: [JunJin1218/natfanclub-backend](https://github.com/JunJin1218/natfanclub-backend.git)
+- Website repo (both frontend + backend): [ItsMeOX/FactGuard-Website](https://github.com/ItsMeOX/FactGuard-Website)
 
 ## System Overview
 
