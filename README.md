@@ -152,6 +152,20 @@ pnpm build:firefox
 
 Then load the generated extension manually in the target browser.
 
+Create packaged zip builds:
+
+```bash
+pnpm zip
+pnpm zip:firefox
+```
+
+Use these packaged outputs when you want a distributable build artifact instead of a dev or unpacked build folder.
+
+Prebuilt zip artifacts are also included in this repository:
+
+- `build_for_chrome.zip`
+- `build_for_firefox.zip`
+
 Typical output folders:
 
 - Chrome dev: `.output/chrome-mv3-dev/`
@@ -197,20 +211,58 @@ This repository is the browser-extension frontend of the broader NatFanClub syst
 
 ## Screenshots
 
-### Main Landing Page
+### Website: Main Landing Page
 
 <p align="center">
   <img src="./imgs/MainPage.jpg" alt="FactGuard main landing page" width="900" />
 </p>
 
-### Forum / Listing Page
+<p align="center"><sub>Main website landing page for discovering and verifying suspicious claims.</sub></p>
+
+### Website: Forum / Listing Page
 
 <p align="center">
   <img src="./imgs/ForumPage.jpg" alt="FactGuard forum listing page" width="900" />
 </p>
 
-### Suspicious Report Submission Page
+<p align="center"><sub>Forum-style listing page for browsing suspicious claims and trending topics.</sub></p>
+
+### Website: Suspicious Report Submission Page
 
 <p align="center">
   <img src="./imgs/ReportSuspicious.jpg" alt="FactGuard suspicious report submission page" width="900" />
 </p>
+
+<p align="center"><sub>Submission form for reporting suspicious information with supporting context.</sub></p>
+
+### Web Extension: Google Search Verification
+
+<p align="center">
+  <img src="./imgs/GoogleSearch.png" alt="Google Search result verification badges" width="900" />
+</p>
+
+<p align="center"><sub>Inline Google Search verification badges showing likely accurate, unverified, and potentially misleading results.</sub></p>
+
+### Web Extension: Popup Overview
+
+<p align="center">
+  <img src="./imgs/Screenshot-EN.png" alt="Extension popup in English" width="900" />
+</p>
+
+<p align="center"><sub>Extension popup review flow in English.</sub></p>
+
+<p align="center">
+  <img src="./imgs/Screenshot-CN.png" alt="Extension popup in Chinese" width="900" />
+</p>
+
+<p align="center"><sub>Extension popup review flow in Chinese to demonstrate multilingual support.</sub></p>
+
+### Web Extension: Popup Details
+
+<p align="center">
+  <img src="./imgs/Popup-CredibilityStatistics.png" alt="Popup credibility statistics section" width="31%" />
+  <img src="./imgs/Popup-Comparison.png" alt="Popup comparison section" width="31%" />
+  <img src="./imgs/Popup-CN.png" alt="Popup Chinese localized section" width="31%" />
+</p>
+
+<p align="center"><sub>Detailed popup sections for credibility statistics, source comparison, and localized multilingual output.</sub></p>
